@@ -1,0 +1,605 @@
+---
+title: "Data 622 - Machine Learning and Big Data - HW #1 - Exploratory Analysis and
+  Essay"
+author: "Enid Roman"
+date: "2024-03-09"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+# Upload the libraries needed.
+library(rpart.plot)
+library(rpart)
+library(RColorBrewer)
+library(corrplot)
+library(GGally)
+library(scales)
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(tabulate)
+library(knitr)
+library(kableExtra)
+library(summarytools)
+library(stats)
+library(class)
+
+```
+
+
+
+```{r}
+# Import the data from github. 
+
+urlfile1 <- "https://raw.githubusercontent.com/enidroman/Data-622-Machine-Learning-and-Big-Data/main/100%20Sales%20Records.csv"
+urlfile2 <- "https://raw.githubusercontent.com/enidroman/Data-622-Machine-Learning-and-Big-Data/main/10000%20Sales%20Records.csv"
+table_small_df <- read.csv(urlfile1)
+table_large_df <- read.csv(urlfile2)
+```
+
+
+In the realm of business analytics, a thorough exploration of our dataset reveals intriguing patterns and variations in key numerical indicators. These metrics not only serve as numerical snapshots of our business operations but also offer valuable insights into the underlying dynamics. 
+
+
+## **Small Dataset**
+
+### **Content of the Tables:**
+
+#### Head of the Dataframe: 
+
+
+```{r}
+# head() displays the first few rows of a dataframe, giving you a quick look at the data.
+head(table_small_df)
+```
+
+#### Summary Statistic: 
+
+
+```{r}
+# summary() provides a summary of the central tendency, dispersion, and distribution of the data, including mean, median, quartiles, min, and max. In summary we get the calculation for the mean and median of numeric variables, computation of specific quantiles (e.g., quartiles) of numeric variables.
+
+summary(table_small_df)
+```
+The dataset contains 100 observations for each variable, and the variables have different types (character, integer, numeric). The descriptive statistics give insights into the distribution and central tendency of the numeric variables.
+
+
+#### Structure of Tables: 
+
+
+```{r}
+# The str() function provides an overview of the structure of an R object, showing the data type and structure of each variable (column) in the dataset.
+str(table_small_df)
+```
+Again, the dataset consists of 100 observations and 14 variables. The variables include categorical features such as Region, Country, Item Type, Sales Channel, Order Priority, Order Date, and Ship Date. Additionally, there are numerical features, including Order ID, Units Sold, Unit Price, Unit Cost, Total Revenue, Total Cost, and Total Profit.
+
+The categorical features provide information about the geographic and logistical aspects of each transaction, while the numerical features quantify the financial details, such as sales quantities, pricing, and associated costs. Notably, the dataset covers a diverse range of regions, countries, and product types, making it suitable for exploring sales trends and financial performance.
+
+
+### **Dataset Characteristics (Structure, Size, Dependencies, Labels, etc.):**
+
+#### Number of Rows and Columns: 
+
+
+```{r}
+# nrow() and ncol() give the number of rows and columns, respectively.
+number_of_rows <- nrow(table_small_df)
+print(paste("Number of rows:", number_of_rows))
+number_of_columns <- ncol(table_small_df)
+print(paste("Number of rows:", number_of_columns))
+
+# names() shows the variable (column) names.
+names(table_small_df)
+```
+
+#### Number of NA's:
+
+
+```{r}
+# Get the total number of NA's in the entire dataframe
+total_na_count <- sum(is.na(table_small_df))
+print("Total number of NA's in the entire dataframe:")
+print(total_na_count)
+
+# Get the number of NA's in each column
+na_per_column <- colSums(is.na(table_small_df))
+print("Number of NA's in each column:")
+print(na_per_column)
+
+```
+There are no NA's in this dataset. 
+
+
+#### Standard Deviation and Variance:
+
+
+```{r}
+# Exclude "Order.ID" and non-numeric variables
+numeric_table_small_df <- table_small_df[sapply(table_small_df, is.numeric) & colnames(table_small_df) != "Order.ID"]
+
+# Check if there are any missing values
+if (any(is.na(numeric_table_small_df))) {
+  cat("Warning: There are missing values in the numeric columns. Consider handling missing values before calculations.\n")
+} else {
+  # Calculate standard deviation and variance for numeric variables
+  std_dev <- apply(numeric_table_small_df, 2, sd)
+  variance <- apply(numeric_table_small_df, 2, var)
+
+  # Combine results into a data frame
+  result_table_small_df <- data.frame(Variable = names(numeric_table_small_df), Standard_Deviation = std_dev, Variance = variance)
+
+ # Print the result as a nicely formatted table
+  result_table <- kable(result_table_small_df, "html") %>%
+    kable_styling()
+
+  # Display the table
+  print(result_table)
+}
+
+```
+
+Examining the 'Units Sold' metric, we observe a considerable range in the quantity of items sold. This variance suggests a diverse sales landscape, possibly influenced by factors such as product popularity, market demand, or seasonal fluctuations.
+
+'Unit Price,' the stability in its values indicates a consistent pricing strategy across different products or time periods. This uniformity in unit prices may be a deliberate choice or could signify a need for reassessment in pricing strategies.
+
+'Unit Cost' displays a moderate level of variability. This metric, representing the cost incurred for each unit, could be influenced by factors like raw material prices, production efficiency, or supplier negotiations.
+
+Shifting our focus to broader financial indicators, 'Total Revenue' showcases substantial fluctuations. This variability in overall income suggests that our business experiences diverse sales performances, potentially tied to external market dynamics or internal factors.
+
+'Total Cost' also demonstrates notable variations, encompassing various expenses associated with our business operations. Understanding these fluctuations is vital for effective cost management and resource allocation.
+
+'Total Profit' metric, reflecting the net financial outcome, displays changes that warrant further investigation. Unraveling the factors influencing these profit variations will be pivotal in devising strategies to enhance overall business performance.
+
+
+#### **Relationships between numeric variables using a correlation matrix.**
+##### See below visualization for Correlation.
+
+
+```{r}
+# Identify numeric columns
+numeric_columns <- sapply(table_small_df, is.numeric)
+
+# Correlation matrix for numeric columns
+cor_matrix <- cor(table_small_df[, numeric_columns])
+cor_matrix
+
+```
+
+The summarized correlation matrix indicates the relationships between various pairs of variables in the dataset. Here are some key observations:
+
+"Units Sold" and "Total Profit" have a strong positive correlation of 0.5645, suggesting that higher unit sales tend to be associated with increased total profits.
+
+"Unit Price" and "Unit Cost" exhibit a strong positive correlation of 0.9873, indicating a nearly linear relationship between these two variables.
+
+"Total Revenue" and "Total Cost" have a high positive correlation of 0.9839, implying that these variables are strongly related, as expected.
+
+"Order ID" has a relatively weak negative correlation with most variables, indicating limited linear relationships with other features in the dataset.
+
+The correlation matrix provides valuable insights into the linear associations between different pairs of variables. Positive correlations suggest a positive relationship, while negative correlations indicate an inverse relationship. The strength of correlation is indicated by the magnitude of the correlation coefficient, with values closer to 1 or -1 indicating stronger associations.
+
+
+### **Visualization**
+
+#### Histograms to visualize the distribution of numeric variables.
+
+
+```{r}
+# Identify numeric columns
+numeric_columns <- sapply(table_small_df, is.numeric)
+
+# Create histograms for numeric columns with blue color
+for (col in names(table_small_df)[numeric_columns]) {
+  hist(table_small_df[[col]], main = col, xlab = col, col = "blue")
+}
+```
+
+For both "Order ID" and "Units Sold," the histograms show a uniform distribution. This suggests that values are spread relatively evenly across the range, and there's no clear tendency for values to cluster around specific points. The histogram for "Unit Price" is described as right-skewed. Right-skewed distributions have a tail extending to the right, indicating that there are fewer higher values but with a few extremely high values (outliers) pulling the distribution to the right. The histograms for "Total Revenue," "Total Cost," and "Total Profit" are all described as right-skewed. Similar to the Unit Price, this indicates that these variables have a distribution with a tail extending to the right, implying the presence of relatively fewer higher values.
+
+
+#### Correlation between variables.
+
+```{r}
+# Create a full correlation plot with a lighter color palette
+corrplot(cor_matrix, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 45, col = colorRampPalette(brewer.pal(9, "YlGn"))(100))
+```
+The correlation coefficients in the provided dataset offer valuable insights into the relationships between various key variables. Notably, a correlation coefficient of 0.99 between Unit Cost and Unit Price indicates an exceptionally strong positive correlation. This implies that as the cost of producing a unit increases, there is a proportional increase in its selling price. This tight relationship suggests a direct link between production costs and pricing.
+
+Moving on to Total Cost and Total Revenue, a correlation coefficient of 0.98 suggests a robust positive correlation. This implies that an increase in the total costs incurred in production corresponds to a proportional increase in the total revenue generated. This strong positive correlation underscores the interconnectedness of production costs and overall revenue.
+
+The correlation coefficient of 0.90 between Total Profit and Total Revenue indicates a strong positive correlation, albeit slightly less intense than the previous examples. This suggests that as total profits increase, there is a tendency for total revenue to increase as well. While not as extreme, this correlation emphasizes a meaningful relationship between overall profitability and revenue.
+
+
+#### Individual Scatter Plots to explore relationships for each pair of variables. 
+
+
+
+```{r}
+# Assuming your dataframe is named 'table_small_df'
+# Identify numeric columns
+numeric_columns <- sapply(table_small_df, is.numeric)
+
+# Create individual scatterplots for pairs of numeric columns using plot
+for (col1 in names(table_small_df)[numeric_columns]) {
+  for (col2 in names(table_small_df)[numeric_columns]) {
+    if (col1 != col2) {
+      plot(table_small_df[[col1]], table_small_df[[col2]], main = paste("Scatterplot of", col1, "vs", col2), col = "blue")
+    }
+  }
+}
+```
+
+A scatter plot with scattered points suggests a lack of a strong linear relationship between variables, indicating their independence. The randomness in the distribution implies no structured or predictable connection. This phenomenon holds whether analyzing numeric or categorical variables. In statistical terms, this scattered appearance may signify homoscedasticity, indicating consistent variability across levels. While the lack of a clear pattern hints at independence or absence of correlation, further analysis is essential for a comprehensive understanding of the data dynamics.
+
+A scatter plot showing points clustered at the top and bottom with a straight line in the middle suggests a potential linear relationship between the variables. This pattern indicates a positive correlation, implying that as one variable increases, the other tends to increase, and vice versa. Further statistical analysis, such as calculating correlation coefficients, is needed to quantify and confirm the strength of this relationship.
+
+When scatter plots display a pattern with outliers concentrated at the top and the majority of data points clustered towards the bottom, it implies potential non-linear relationships or the presence of influential data points. These outliers can strongly affect correlation or regression analyses, necessitating careful investigation. Understanding the nature of these outliers is crucial, as they might indicate unique characteristics or anomalies in the dataset. Further analysis, such as examining residuals and exploring alternative modeling techniques, may be needed to accurately capture underlying patterns in the data.
+
+A diagonal line in a scatter plot from the bottom-left to the top-right indicates a positive linear relationship between the variables being plotted. This suggests that as one variable increases, the other also tends to increase. The steeper the slope, the stronger the positive correlation. Further analysis, such as calculating correlation coefficients and conducting regression analysis, can provide a more quantitative understanding of the relationship.
+
+A scatter plot displaying a straight vertical line from bottom to top suggests that the two variables being compared have a perfect linear relationship. This means that as one variable increases, the other also increases proportionally. The correlation coefficient would be +1, indicating a strong positive correlation. However, it's important to note that this ideal scenario is less common in real-world data, and some variations or deviations may be present due to other factors or measurement errors.
+
+A scatter plot with points aligned horizontally indicates a perfect linear relationship where the two variables being compared have a constant value for one of them, regardless of the changes in the other variable. This implies a correlation coefficient of -1, representing a strong negative correlation. In simpler terms, as one variable increases, the other decreases proportionally. As with other ideal scenarios, variations and deviations may occur in real-world data due to external factors or measurement errors.
+
+
+#### Frequency for each variables for each columns:
+
+
+```{r}
+for (column_name in names(table_small_df)) {
+  if (!is.numeric(table_small_df[[column_name]])) {
+    barplot(table(table_small_df[[column_name]]), main = paste("Bar Plot of", column_name))
+  }
+}
+```
+
+#### Boxplots for all numeric columns.
+
+
+From the above summary of your dataset, it appears that the numeric variables (Units.Sold, Unit.Price, Unit.Cost, Total.Revenue, Total.Cost, Total.Profit) have a wide range of values with varying scales. The Units.Sold variable, for instance, has a minimum value of 124 and a maximum of 9,925, while the Total.Revenue variable ranges from 4,870 to 5,997,055.
+
+Given the diverse scales of these variables, when I create a boxplot for all of them at once, some may dominate the plot, making it challenging to see the details of others. I considered normalizing or scaling these variables to bring them to a similar scale for better visualization.
+
+```{r}
+# Assuming 'df' is your dataframe
+scaled_df <- table_small_df[, c("Units.Sold", "Unit.Price", "Unit.Cost", "Total.Revenue", "Total.Cost", "Total.Profit")]
+
+# Scale the numeric variables
+scaled_df <- scale(scaled_df)
+
+# Create a boxplot
+boxplot(scaled_df, col = "blue", main = "Boxplot of Scaled Numeric Variables", las = 2)
+```
+The boxplot analysis reveals a positive distribution, indicating a concentration of data towards higher values. The right-skewed pattern suggests a majority of observations falling on the higher end of the axis. Additionally, the presence of outliers highlights extreme values that significantly deviate from the general trend, adding complexity to the dataset.
+
+
+## **Large Dataset**
+
+### **Content of the Tables:**
+
+#### Head of the Dataframe: 
+
+
+```{r}
+# head() displays the first few rows of a dataframe, giving you a quick look at the data.
+head(table_large_df)
+```
+
+#### Summary Statistic: 
+
+
+```{r}
+# summary() provides a summary of the central tendency, dispersion, and distribution of the data, including mean, median, quartiles, min, and max. In summary we get the calculation for the mean and median of numeric variables, computation of specific quantiles (e.g., quartiles) of numeric variables.
+
+summary(table_large_df)
+```
+The dataset contains 10,000 observations for each variable, and the variables have different types (character, integer, numeric). The descriptive statistics give insights into the distribution and central tendency of the numeric variables.
+
+
+#### Structure of Tables: 
+
+
+```{r}
+# The str() function provides an overview of the structure of an R object, showing the data type and structure of each variable (column) in the dataset.
+str(table_large_df)
+```
+Again, the dataset consists of 10,000 observations and 14 variables. The variables include categorical features such as Region, Country, Item Type, Sales Channel, Order Priority, Order Date, and Ship Date. Additionally, there are numerical features, including Order ID, Units Sold, Unit Price, Unit Cost, Total Revenue, Total Cost, and Total Profit.
+
+The categorical features provide information about the geographic and logistical aspects of each transaction, while the numerical features quantify the financial details, such as sales quantities, pricing, and associated costs. Notably, the dataset covers a diverse range of regions, countries, and product types, making it suitable for exploring sales trends and financial performance.
+
+
+### **Dataset Characteristics (Structure, Size, Dependencies, Labels, etc.):**
+
+#### Number of Rows and Columns: 
+
+
+```{r}
+# nrow() and ncol() give the number of rows and columns, respectively.
+number_of_rows <- nrow(table_large_df)
+print(paste("Number of rows:", number_of_rows))
+number_of_columns <- ncol(table_large_df)
+print(paste("Number of rows:", number_of_columns))
+
+# names() shows the variable (column) names.
+names(table_large_df)
+```
+
+#### Number of NA's:
+
+
+```{r}
+# Get the total number of NA's in the entire dataframe
+total_na_count <- sum(is.na(table_large_df))
+print("Total number of NA's in the entire dataframe:")
+print(total_na_count)
+
+# Get the number of NA's in each column
+na_per_column <- colSums(is.na(table_large_df))
+print("Number of NA's in each column:")
+print(na_per_column)
+```
+There are no NA's in this dataset. 
+
+
+#### Standard Deviation and Variance:
+
+
+```{r}
+# Exclude "Order.ID" and non-numeric variables
+numeric_table_large_df <- table_large_df[sapply(table_large_df, is.numeric) & colnames(table_large_df) != "Order.ID"]
+
+# Check if there are any missing values
+if (any(is.na(numeric_table_large_df))) {
+  cat("Warning: There are missing values in the numeric columns. Consider handling missing values before calculations.\n")
+} else {
+  # Calculate standard deviation and variance for numeric variables
+  std_dev <- apply(numeric_table_large_df, 2, sd)
+  variance <- apply(numeric_table_large_df, 2, var)
+
+  # Combine results into a data frame
+  result_table_large_df <- data.frame(Variable = names(numeric_table_large_df), Standard_Deviation = std_dev, Variance = variance)
+
+ # Print the result as a nicely formatted table
+  result_table <- kable(result_table_large_df, "html") %>%
+    kable_styling()
+
+  # Display the table
+  print(result_table)
+}
+```
+
+The dataset reveals interesting insights into key variables, each with its unique characteristics. 'Units Sold' displays considerable variability, with a standard deviation of 2873.25 and a variance of 8.26 million, suggesting diverse sales patterns. 'Unit Price' exhibits lower variability, indicated by a standard deviation of 217.94 and a variance of 47,499.63, reflecting a more stable pricing strategy.
+
+Similarly, 'Unit Cost' showcases moderate variability, with a standard deviation of 176.45 and a variance of 31,133.32, hinting at factors impacting production costs. The financial indicators 'Total Revenue' and 'Total Cost' demonstrate significant fluctuations, with standard deviations of 1,465,026.17 and 1,145,914.07, respectively, emphasizing the complexity of overall sales and operational expenses.
+
+Lastly, 'Total Profit' displays notable variability, indicated by a standard deviation of 377,554.96 and a variance of 142,547.7, suggesting potential areas for further investigation to optimize overall financial outcomes. This comprehensive summary provides a snapshot of the dataset's numerical features, paving the way for deeper analysis and strategic decision-making.
+
+
+#### **Relationships between numeric variables using a correlation matrix.**
+##### See below visualization for Correlation.
+
+
+```{r}
+cor_matrix <- cor(table_large_df[, numeric_columns])
+cor_matrix
+```
+
+
+### **Visualization**
+
+#### Histograms to visualize the distribution of numeric variables.
+
+
+```{r}
+# Identify numeric columns
+numeric_columns <- sapply(table_large_df, is.numeric)
+
+# Create histograms for numeric columns with blue color
+for (col in names(table_large_df)[numeric_columns]) {
+  hist(table_large_df[[col]], main = col, xlab = col, col = "blue")
+}
+```
+The result of the of Histograms to visualize the distribution of numeric variables is similar as the small dataset. 
+
+#### Correlation between variables.
+
+
+```{r}
+# Create a full correlation plot with a lighter color palette
+corrplot(cor_matrix, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 45, col = colorRampPalette(brewer.pal(9, "YlGn"))(100))
+```
+
+Similar to the small data set the correlation coefficients in the provided dataset offer valuable insights into the relationships between various key variables. Notably, a correlation coefficient of 0.99 between Unit Cost and Unit Price indicates an exceptionally strong positive correlation. This implies that as the cost of producing a unit increases, there is a proportional increase in its selling price. This tight relationship suggests a direct link between production costs and pricing.
+
+Moving on to Total Cost and Total Revenue, a correlation coefficient slightly higher of .01 the the small dataset of 0.99 suggests a robust positive correlation. This implies that an increase in the total costs incurred in production corresponds to a proportional increase in the total revenue generated. This strong positive correlation underscores the interconnectedness of production costs and overall revenue.
+
+The correlation coefficient of 0.88 between Total Profit and Total Revenue indicates a little less strong positive correlation then the small dataset, albeit slightly less intense than the previous examples. This suggests that as total profits increase, there is a tendency for total revenue to increase as well. While not as extreme, this correlation emphasizes a meaningful relationship between overall profitability and revenue.
+
+
+#### Individual Scatter Plots to explore relationships for each pair of variables. 
+
+
+```{r}
+# Assuming your dataframe is named 'table_small_df'
+# Identify numeric columns
+numeric_columns <- sapply(table_large_df, is.numeric)
+
+# Create individual scatterplots for pairs of numeric columns using plot
+for (col1 in names(table_large_df)[numeric_columns]) {
+  for (col2 in names(table_large_df)[numeric_columns]) {
+    if (col1 != col2) {
+      plot(table_large_df[[col1]], table_large_df[[col2]], main = paste("Scatterplot of", col1, "vs", col2), col = "blue")
+    }
+  }
+}
+
+```
+A scatter plot with scattered points suggests a lack of a strong linear relationship between variables, indicating their independence. The randomness in the distribution implies no structured or predictable connection. This phenomenon holds whether analyzing numeric or categorical variables. In statistical terms, this scattered appearance may signify homoscedasticity, indicating consistent variability across levels. While the lack of a clear pattern hints at independence or absence of correlation, further analysis is essential for a comprehensive understanding of the data dynamics.
+
+A scatter plot showing points clustered at the top and bottom with a straight line in the middle suggests a potential linear relationship between the variables. This pattern indicates a positive correlation, implying that as one variable increases, the other tends to increase, and vice versa. Further statistical analysis, such as calculating correlation coefficients, is needed to quantify and confirm the strength of this relationship.
+
+When scatter plots display a pattern with outliers concentrated at the top and the majority of data points clustered towards the bottom, it implies potential non-linear relationships or the presence of influential data points. These outliers can strongly affect correlation or regression analyses, necessitating careful investigation. Understanding the nature of these outliers is crucial, as they might indicate unique characteristics or anomalies in the dataset. Further analysis, such as examining residuals and exploring alternative modeling techniques, may be needed to accurately capture underlying patterns in the data.
+
+A diagonal line in a scatter plot from the bottom-left to the top-right indicates a positive linear relationship between the variables being plotted. This suggests that as one variable increases, the other also tends to increase. The steeper the slope, the stronger the positive correlation. Further analysis, such as calculating correlation coefficients and conducting regression analysis, can provide a more quantitative understanding of the relationship.
+
+A scatter plot displaying a straight vertical line from bottom to top suggests that the two variables being compared have a perfect linear relationship. This means that as one variable increases, the other also increases proportionally. The correlation coefficient would be +1, indicating a strong positive correlation. However, it's important to note that this ideal scenario is less common in real-world data, and some variations or deviations may be present due to other factors or measurement errors.
+
+A scatter plot with points aligned horizontally indicates a perfect linear relationship where the two variables being compared have a constant value for one of them, regardless of the changes in the other variable. This implies a correlation coefficient of -1, representing a strong negative correlation. In simpler terms, as one variable increases, the other decreases proportionally. As with other ideal scenarios, variations and deviations may occur in real-world data due to external factors or measurement errors.
+
+
+
+#### Frequency table for each variables in each columns:
+
+
+```{r}
+for (column_name in names(table_large_df)) {
+  if (!is.numeric(table_large_df[[column_name]])) {
+    barplot(table(table_large_df[[column_name]]), main = paste("Bar Plot of", column_name))
+  }
+}
+```
+
+
+#### Boxplots for all numeric columns.
+
+
+From the above summary of your dataset, it appears that the numeric variables (Units.Sold, Unit.Price, Unit.Cost, Total.Revenue, Total.Cost, Total.Profit) have a wide range of values with varying scales. The Units.Sold variable, for instance, has a minimum value of 2 and a maximum of 10,000, while the Total.Revenue variable ranges from 168 to 6,680,027.
+
+Given the diverse scales of these variables, when I create a boxplot for all of them at once, some may dominate the plot, making it challenging to see the details of others. I considered normalizing or scaling these variables to bring them to a similar scale for better visualization.
+
+
+```{r}
+# Assuming 'df' is your dataframe
+scaled_df <- table_large_df[, c("Units.Sold", "Unit.Price", "Unit.Cost", "Total.Revenue", "Total.Cost", "Total.Profit")]
+
+# Scale the numeric variables
+scaled_df <- scale(scaled_df)
+
+# Create a boxplot
+boxplot(scaled_df, col = "blue", main = "Boxplot of Scaled Numeric Variables", las = 2)
+```
+The boxplot analysis reveals a positive distribution, indicating a concentration of data towards higher values. The right-skewed pattern suggests a majority of observations falling on the higher end of the axis. Additionally, the presence of too much outliers in Total Revenue, Total Cost, and Total Profit highlights extreme values that significantly deviate from the general trend, adding an extreme complexity to the dataset.
+
+
+## **Machine Learning Algorithms**
+
+### **Large Dataset**
+
+### **Decision Tree**
+
+
+```{r}
+set.seed(123)
+rpart.control(maxdepth = 30)
+```
+
+
+```{r}
+set.seed(42)
+# Assuming your large dataset is named "table_large_df"
+train_indices <- sample(1:nrow(table_large_df), 0.8 * nrow(table_large_df))
+train_data <- table_large_df[train_indices, ]
+test_data <- table_large_df[-train_indices, ]
+
+# Remove unnecessary variables
+train_data <- train_data[, !(names(train_data) %in% c("Order.ID", "Order.Date", "Ship.Date"))]
+test_data <- test_data[, !(names(test_data) %in% c("Order.ID", "Order.Date", "Ship.Date"))]
+
+fit <- rpart( Total.Profit ~ Item.Type + Region + Sales.Channel + Order.Priority + Country + Units.Sold, method = "anova", data = train_data)
+
+# detailed summary of splits
+#summary(fit) 
+
+```
+
+
+```{r}
+# create additional plots
+par(mfrow=c(1,2)) # two plots on one page
+rsq.rpart(fit) # visualize cross-validation results 
+```
+The regression tree utilized two variables, Item.Type and Units.Sold, to construct the tree. These variables were deemed the most relevant for predicting Total.Profit based on the tree-building algorithm's criteria.
+The root node error is a measure of the initial error before any splits are made. In this case, the sum of squared errors (SSE) divided by the number of observations (8000) results in a root node error of approximately 1.42e+11.
+CP (Complexity Parameter): A measure of tree complexity, where smaller values indicate simpler trees.
+nsplit: Number of splits.
+rel error: Relative error reduction at each split.
+xerror: Cross-validated error rate, an estimate of the model's prediction error on unseen data.
+xstd: Standard deviation of the cross-validated error.
+These values show how the cross-validated error changes as the tree grows. The goal is often to identify a level of complexity (number of splits) that minimizes the cross-validated error, ensuring good generalization to new data.
+In summary, the regression tree was built using Item.Type and Units.Sold as key predictors. The cross-validated error rates provide insights into the model's performance at different levels of complexity, helping to balance simplicity and predictive accuracy. 
+
+```{r}
+# plot tree
+plot(fit, uniform=TRUE,
+   main="Regression Tree for Total profit ")
+text(fit, use.n=TRUE, all=TRUE, cex=.8)
+```
+
+```{r}
+# Create an attractive postscript plot of the tree
+prp(fit, main = "Regression Tree for Total profit", extra = 101)
+```
+
+```{r}
+# Make predictions on the test set
+predictions <- predict(fit, test_data)
+
+# Extract the actual Total.Profit values from the test set
+actual_values <- test_data$Total.Profit
+
+# Calculate Mean Squared Error
+mse <- mean((predictions - actual_values)^2)
+
+# Print the MSE
+cat("Mean Squared Error (MSE):", mse, "\n")
+```
+The Mean Squared Error (MSE) value for a decision tree regression model represents the average squared difference between the actual and predicted values. A MSE of 10369206128 indicates the average squared error across all predictions made by the decision tree. The MSE of 10369206128 suggests that, on average, the squared difference between the predicted and actual values is relatively high.
+
+
+### **KNN Model**
+
+
+```{r}
+set.seed(42)
+
+# Split the dataset into training and testing sets
+train_indices <- sample(1:nrow(table_large_df), 0.8 * nrow(table_large_df))
+train_data <- table_large_df[train_indices, ]
+test_data <- table_large_df[-train_indices, ]
+
+# Select relevant predictor variables (assuming all numeric)
+predictors <- train_data[, c("Units.Sold", "Unit.Price", "Unit.Cost", "Total.Revenue", "Total.Cost")]
+
+# Standardize the predictors (optional but often recommended)
+scaled_predictors <- scale(predictors)
+
+# Select the target variable
+target <- train_data$Total.Profit
+
+# Build the KNN model
+knn_model <- knn(train = scaled_predictors, test = scaled_predictors, cl = target, k = 2)
+
+# Evaluate the model on the test set
+test_predictions <- knn(train = scaled_predictors, test = scaled_predictors, cl = target, k = 2)
+
+# Assess accuracy or other metrics
+accuracy <- sum(test_predictions == target) / length(target)
+
+# Print or visualize the results as needed
+print(accuracy)
+```
+The output [1] 0.5125 likely represents a result or metric from a k-Nearest Neighbors (kNN) model. Depending on the specific context, it could be a predicted value or a performance metric such as accuracy or mean squared error. The exact interpretation depends on the type of problem the model is solving (e.g., regression or classification) and the evaluation metric used.
+
+The analysis of the two models, Decision Tree and KNN, on the given datasets reveals differences in their performance metrics. The Decision Tree model, evaluated using Mean Squared Error (MSE), yielded a value of 10,369,206,128, indicating the average squared difference between predicted and actual values. Meanwhile, the KNN model was assessed with a metric of [1] 0.5125, likely representing classification accuracy or error for discrete outcomes. It's crucial to note that these metrics are not directly comparable, as MSE is tailored for regression tasks, while the KNN metric is more relevant to classification tasks. Further exploration of the models' strengths and weaknesses is necessary to determine their suitability for the specific dataset and analysis goals.
+
+In conclusion, this exploratory analysis offers a nuanced perspective on our business metrics. Beyond the numerical values, it provides a narrative of our business journey, highlighting areas of strength, potential concerns, and opportunities for refinement. Armed with these insights, we are better equipped to make informed decisions that will steer our business towards sustained growth and success.
+
+Reference: https://excelbianalytics.com/wp/downloads-18-sample-csv-files-data-sets-for-testing-sales/
